@@ -48,15 +48,15 @@ class FbxReadWrite(object):
         """
         lKeyIndex = 0
         lTime = FbxTime()
-        lTime.SetGlobalTimeMode(FbxTime.eFrames30)  # Set to fps=60
+        lTime.SetGlobalTimeMode(FbxTime.EMode.eFrames30)  # Set to fps=60
         data = np.squeeze(data)
 
         lCurve.KeyModifyBegin()
         for i in range(data.shape[0]):
-            lTime.SetFrame(i, FbxTime.eFrames30)
+            lTime.SetFrame(i, FbxTime.EMode.eFrames30)
             lKeyIndex = lCurve.KeyAdd(lTime)[0]
             lCurve.KeySetValue(lKeyIndex, data[i])
-            lCurve.KeySetInterpolation(lKeyIndex, FbxAnimCurveDef.eInterpolationCubic)
+            lCurve.KeySetInterpolation(lKeyIndex, FbxAnimCurveDef.EInterpolationType.eInterpolationCubic)
         lCurve.KeyModifyEnd()
 
     def addAnimation(self, pkl_filename: str, smpl_params: Dict, verbose: bool = False):
@@ -64,7 +64,7 @@ class FbxReadWrite(object):
 
         # 0. Set fps to 30
         lGlobalSettings = lScene.GetGlobalSettings()
-        lGlobalSettings.SetTimeMode(FbxTime.eFrames30)
+        lGlobalSettings.SetTimeMode(FbxTime.EMode.eFrames30)
 
         self.destroyAllAnimation()
         

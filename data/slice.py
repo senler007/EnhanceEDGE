@@ -8,7 +8,7 @@ import soundfile as sf
 from tqdm import tqdm
 
 
-def slice_audio(audio_file, stride, length, out_dir):
+def slice_audio(audio_file, stride, length, out_dir):# 音乐, 滑动步长, 片段长度, 输出目录
     # stride, length in seconds
     audio, sr = lr.load(audio_file, sr=None)
     file_name = os.path.splitext(os.path.basename(audio_file))[0]

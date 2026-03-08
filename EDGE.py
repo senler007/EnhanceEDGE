@@ -1,3 +1,4 @@
+# 整个系统的 核心类，负责diffusion + dance decoder
 import multiprocessing
 import os
 import pickle

@@ -1,3 +1,4 @@
+# 调用模型生成结果 : 读取音乐 → 提取音乐特征 → 调用 EDGE 模型 → 生成舞蹈 → 保存结果
 import glob
 import os
 from functools import cmp_to_key
@@ -17,7 +18,7 @@ from data.audio_extraction.baseline_features import extract as baseline_extract
 from data.audio_extraction.jukebox_features import extract as juke_extract
 
 # sort filenames that look like songname_slice{number}.ext
-key_func = lambda x: int(os.path.splitext(x)[0].split("_")[-1].split("slice")[-1])
+key_func = lambda x: int(os.path.splitext(x)[0].split("_")[-1].split("slice")[-1]) # x = song_slice10.wav 时得到 10 
 
 
 def stringintcmp_(a, b):
@@ -36,15 +37,17 @@ def stringintcmp_(a, b):
 
 stringintkey = cmp_to_key(stringintcmp_)
 
-
+# test 做的 : 读取 wav file 里的wav,剪成片段,随机选取片段
 def test(opt):
-    feature_func = juke_extract if opt.feature_type == "jukebox" else baseline_extract
-    sample_length = opt.out_length
-    sample_size = int(sample_length / 2.5) - 1
+    feature_func = juke_extract if opt.feature_type == "jukebox" else baseline_extract # 选择音乐特征
+    sample_length = opt.out_length 
+    sample_size = int(sample_length / 2.5) - 1 # 拼接
 
     temp_dir_list = []
-    all_cond = []
-    all_filenames = []
+    all_cond = [] # 音乐特征
+    all_filenames = [] # 音频文件
+
+    # 计算特征 并 保存
     if opt.use_cached_features:
         print("Using precomputed features")
         # all subdirectories
@@ -55,14 +58,14 @@ def test(opt):
             assert len(file_list) == len(juke_file_list)
             # random chunk after sanity check
             rand_idx = random.randint(0, len(file_list) - sample_size)
-            file_list = file_list[rand_idx : rand_idx + sample_size]
+            file_list = file_list[rand_idx : rand_idx + sample_size] # 随机选择连续片段
             juke_file_list = juke_file_list[rand_idx : rand_idx + sample_size]
             cond_list = [np.load(x) for x in juke_file_list]
             all_filenames.append(file_list)
             all_cond.append(torch.from_numpy(np.array(cond_list)))
     else:
         print("Computing features for input music")
-        for wav_file in glob.glob(os.path.join(opt.music_dir, "*.wav")):
+        for wav_file in glob.glob(os.path.join(opt.music_dir, "*.wav")): # 拿到所有wav文件
             # create temp folder (or use the cache folder if specified)
             if opt.cache_features:
                 songname = os.path.splitext(os.path.basename(wav_file))[0]
@@ -103,8 +106,9 @@ def test(opt):
             all_cond.append(cond_list)
             all_filenames.append(file_list[rand_idx : rand_idx + sample_size])
 
+    # 
     model = EDGE(opt.feature_type, opt.checkpoint)
-    model.eval()
+    model.eval() # 把模型切换到 推理模式（inference mode）
 
     # directory for optionally saving the dances for eval
     fk_out = None
@@ -113,7 +117,7 @@ def test(opt):
 
     print("Generating dances")
     for i in range(len(all_cond)):
-        data_tuple = None, all_cond[i], all_filenames[i]
+        data_tuple = None, all_cond[i], all_filenames[i] # 准备输入
         model.render_sample(
             data_tuple, "test", opt.render_dir, render_count=-1, fk_out=fk_out, render=not opt.no_render
         )
@@ -126,3 +130,5 @@ def test(opt):
 if __name__ == "__main__":
     opt = parse_test_opt()
     test(opt)
+
+# python test.py --music_dir custom_music/
