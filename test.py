@@ -89,11 +89,8 @@ def test(opt):
                 # if not caching then only calculate for the interested range
                 if (not opt.cache_features) and (not (rand_idx <= idx < rand_idx + sample_size)):
                     continue
-                # audio = jukemirlib.load_audio(file)
-                # reps = jukemirlib.extract(
-                #     audio, layers=[66], downsample_target_rate=30
-                # )[66]
-                reps, _ = feature_func(file)
+
+                reps, _ = feature_func(file) # 提取特征
                 # save reps
                 if opt.cache_features:
                     featurename = os.path.splitext(file)[0] + ".npy"

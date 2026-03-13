@@ -7,7 +7,7 @@ import numpy as np
 from tqdm import tqdm
 
 FPS = 30
-LAYER = 66
+LAYER = 66 # Jukebox不同层提取的特征语义层次不同。低层主要包含音频信号级特征，高层更偏向音乐生成语义，而中高层能够同时捕捉节奏、节拍以及音乐结构信息。已有研究表明第66层的特征对舞蹈生成任务表现较好，因此本文采用Jukebox第66层作为音乐特征表示。
 
 
 def extract(fpath, skip_completed=True, dest_dir="aist_juke_feats"):
@@ -18,11 +18,11 @@ def extract(fpath, skip_completed=True, dest_dir="aist_juke_feats"):
     if os.path.exists(save_path) and skip_completed:
         return
 
-    audio = jukemirlib.load_audio(fpath)
-    reps = jukemirlib.extract(audio, layers=[LAYER], downsample_target_rate=FPS)
+    audio = jukemirlib.load_audio(fpath) # 将wav文件转换为声音原始振幅序列
+    reps = jukemirlib.extract(audio, layers=[LAYER], downsample_target_rate=FPS) # 把声音变成 神经网络里的高维音乐表征
 
     #np.save(save_path, reps[LAYER])
-    return reps[LAYER], save_path
+    return reps[LAYER], save_path # 得到的是音乐的特征向量 (第几帧,特征向量)  
 
 
 def extract_folder(src, dest):

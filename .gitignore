@@ -20,12 +20,6 @@ custom_music/
 # FBX SDK
 include/
 third_party/
-fbx202039_fbxpythonsdk_linux/
-
-# SDK docs
-index.html
-Install_FBX_Python_SDK.txt
-License.txt
 
 # temporary
 *.swp
