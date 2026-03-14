@@ -554,7 +554,8 @@ class GaussianDiffusion(nn.Module):
         constraint=None,
         sound_folder="ood_sliced",
         start_point=None,
-        render=True
+        render=True,
+        target_frames=None
     ):
         if isinstance(shape, tuple):
             if mode == "inpaint":
@@ -598,17 +599,13 @@ class GaussianDiffusion(nn.Module):
             b, s, c1, c2 = q.shape
             assert s % 2 == 0
             half = s // 2
+
             if b > 1:
                 # if long mode, stitch position using linear interp
-
                 fade_out = torch.ones((1, s, 1)).to(pos.device)
                 fade_in = torch.ones((1, s, 1)).to(pos.device)
-                fade_out[:, half:, :] = torch.linspace(1, 0, half)[None, :, None].to(
-                    pos.device
-                )
-                fade_in[:, :half, :] = torch.linspace(0, 1, half)[None, :, None].to(
-                    pos.device
-                )
+                fade_out[:, half:, :] = torch.linspace(1, 0, half)[None, :, None].to(pos.device)
+                fade_in[:, :half, :] = torch.linspace(0, 1, half)[None, :, None].to(pos.device)
 
                 pos[:-1] *= fade_out
                 pos[1:] *= fade_in
@@ -619,17 +616,14 @@ class GaussianDiffusion(nn.Module):
                     full_pos[idx : idx + s] += pos_slice
                     idx += half
 
-                # stitch joint angles with slerp
                 slerp_weight = torch.linspace(0, 1, half)[None, :, None].to(pos.device)
 
                 left, right = q[:-1, half:], q[1:, :half]
-                # convert to quat
                 left, right = (
                     axis_angle_to_quaternion(left),
                     axis_angle_to_quaternion(right),
                 )
-                merged = quat_slerp(left, right, slerp_weight)  # (b-1) x half x ...
-                # convert back
+                merged = quat_slerp(left, right, slerp_weight)
                 merged = quaternion_to_axis_angle(merged)
 
                 full_q = torch.zeros((s + half * (b - 1), c1, c2)).to(pos.device)
@@ -640,16 +634,19 @@ class GaussianDiffusion(nn.Module):
                     idx += half
                 full_q[idx : idx + half] += q[-1, half:]
 
-                # unsqueeze for fk
                 full_pos = full_pos.unsqueeze(0)
                 full_q = full_q.unsqueeze(0)
             else:
                 full_pos = pos
                 full_q = q
-            full_pose = (
-                self.smpl.forward(full_q, full_pos).detach().cpu().numpy()
-            )  # b, s, 24, 3
-            # squeeze the batch dimension away and render
+
+            # 精确控制最终动作帧数
+            if target_frames is not None:
+                full_pos = full_pos[:, :target_frames, :]
+                full_q = full_q[:, :target_frames, :, :]
+
+            full_pose = self.smpl.forward(full_q, full_pos).detach().cpu().numpy()
+
             skeleton_render(
                 full_pose[0],
                 epoch=f"{epoch}",

@@ -286,13 +286,14 @@ class EDGE:
                         os.path.join(opt.render_dir, "train_" + opt.exp_name),
                         name=wavnames[:render_count],
                         sound=True,
+                        target_frames=None
                     )
                     print(f"[MODEL SAVED at Epoch {epoch}]")
         if self.accelerator.is_main_process:
             wandb.run.finish()
 
     def render_sample(
-        self, data_tuple, label, render_dir, render_count=-1, fk_out=None, render=True
+        self, data_tuple, label, render_dir, render_count=-1, fk_out=None, render=True,target_frames=None
     ):
         _, cond, wavname = data_tuple
         assert len(cond.shape) == 3
@@ -310,5 +311,6 @@ class EDGE:
             sound=True,
             mode="long",
             fk_out=fk_out,
-            render=render
+            render=render,
+            target_frames=target_frames
         )

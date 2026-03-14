@@ -8,20 +8,45 @@ import soundfile as sf
 from tqdm import tqdm
 
 
-def slice_audio(audio_file, stride, length, out_dir):# 音乐, 滑动步长, 片段长度, 输出目录
-    # stride, length in seconds
+import os
+import math
+import numpy as np
+import librosa as lr
+import soundfile as sf
+
+
+def slice_audio(audio_file, stride, length, out_dir):
+    """
+    按滑窗切片，最后一段允许补零。
+    以“覆盖到音频末尾”为停止条件。
+    """
     audio, sr = lr.load(audio_file, sr=None)
     file_name = os.path.splitext(os.path.basename(audio_file))[0]
-    start_idx = 0
-    idx = 0
+
     window = int(length * sr)
     stride_step = int(stride * sr)
-    while start_idx <= len(audio) - window:
-        audio_slice = audio[start_idx : start_idx + window]
+    audio_len = len(audio)
+
+    # 需要多少个窗口，才能覆盖到音频结尾
+    if audio_len <= window:
+        num_slices = 1
+    else:
+        num_slices = math.ceil((audio_len - window) / stride_step) + 1
+
+    for idx in range(num_slices):
+        start_idx = idx * stride_step
+        end_idx = start_idx + window
+
+        audio_slice = np.zeros(window, dtype=audio.dtype)
+
+        if start_idx < audio_len:
+            valid_end = min(end_idx, audio_len)
+            valid_len = valid_end - start_idx
+            audio_slice[:valid_len] = audio[start_idx:valid_end]
+
         sf.write(f"{out_dir}/{file_name}_slice{idx}.wav", audio_slice, sr)
-        start_idx += stride_step
-        idx += 1
-    return idx
+
+    return num_slices
 
 
 def slice_motion(motion_file, stride, length, num_slices, out_dir):
