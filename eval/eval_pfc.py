@@ -2,7 +2,7 @@ import argparse
 import glob
 import os
 import pickle
-
+import random
 import numpy as np
 from tqdm import tqdm
 
@@ -16,6 +16,7 @@ def calc_physical_score(dir):
     DT = 1 / 30
 
     it = glob.glob(os.path.join(dir, "*.pkl"))
+    print(f"Found {len(it)} pkl files in {dir}")
     if len(it) > 1000:
         it = random.sample(it, 1000)
     for pkl in tqdm(it):
@@ -27,8 +28,12 @@ def calc_physical_score(dir):
         root_a[:, up_dir] = np.maximum(root_a[:, up_dir], 0)  # (S-2, 3)
         # l2 norm
         root_a = np.linalg.norm(root_a, axis=-1)  # (S-2,)
+        
         scaling = root_a.max()
-        root_a /= scaling
+        if scaling > 1e-8:
+            root_a /= scaling
+        else:
+            root_a = np.zeros_like(root_a)
 
         foot_idx = [7, 10, 8, 11]
         feet = joint3d[:, foot_idx]  # foot positions (S, 4, 3)
@@ -56,7 +61,7 @@ def parse_eval_opt():
     parser.add_argument(
         "--motion_path",
         type=str,
-        default="motions/",
+        default="eval/motions/",
         help="Where to load saved motions",
     )
     opt = parser.parse_args()

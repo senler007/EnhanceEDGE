@@ -15,7 +15,7 @@ __pycache__/
 *.zip
 cached_features/
 custom_music/
-
+fma_small
 
 # FBX SDK
 include/
